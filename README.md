@@ -11,22 +11,6 @@ A production-ready [Model Context Protocol (MCP)](https://modelcontextprotocol.i
 - ✅ **Production Ready**: Deployed on Google Cloud Run with high availability
 - 🎯 **Grounded Responses**: All answers include source citations from official NVIDIA blogs
 
-## Kaggle Submission
-
-This project was submitted for the **Agents Intensive Capstone Project** (5-Day AI Agents Intensive Course with Google).
-
-**Track**: Agents for Good
-
-**Key Concepts Demonstrated**:
-1. **RAG (Retrieval-Augmented Generation)** - Using Vertex AI RAG Corpus for grounded information retrieval
-2. **Query Transformation** - Using Gemini 2.0 Flash to improve query quality
-3. **Answer Grading & Iterative Refinement** - Quality assurance loop with automatic query refinement
-4. **Model Context Protocol (MCP)** - Building production-ready agent tools
-5. **Vector Search** - Semantic similarity search using Vertex AI Vector Search
-
-**Status**: ✅ Successfully submitted. Results will be announced before the end of December 2025.
-
-
 ## Quick Start for Cursor
 
 Add this to your Cursor MCP configuration file (usually `~/.cursor/mcp.json` or `%APPDATA%\Cursor\User\mcp.json`):
