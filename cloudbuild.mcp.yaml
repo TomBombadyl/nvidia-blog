@@ -1,0 +1,53 @@
+steps:
+  # Build Docker image for MCP Server
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-f'
+      - 'Dockerfile.mcp'
+      - '-t'
+      - 'europe-west3-docker.pkg.dev/$PROJECT_ID/rss-ingestion/nvidia-blog-mcp-server:$BUILD_ID'
+      - '-t'
+      - 'europe-west3-docker.pkg.dev/$PROJECT_ID/rss-ingestion/nvidia-blog-mcp-server:latest'
+      - '.'
+
+  # Push Docker image to Artifact Registry
+  - id: 'push-image'
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'europe-west3-docker.pkg.dev/$PROJECT_ID/rss-ingestion/nvidia-blog-mcp-server'
+
+  # Deploy to Cloud Run Service
+  # Service account cloud-run-rss-ingestor is used for the service identity
+  # Service is publicly accessible (no authentication required for MCP endpoint)
+  - id: 'deploy-service'
+    name: 'gcr.io/cloud-builders/gcloud'
+    waitFor: ['push-image']
+    args:
+      - 'run'
+      - 'deploy'
+      - 'nvidia-blog-mcp-server'
+      - '--image=europe-west3-docker.pkg.dev/$PROJECT_ID/rss-ingestion/nvidia-blog-mcp-server:$BUILD_ID'
+      - '--region=europe-west3'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--port=8080'
+      - '--memory=1Gi'
+      - '--cpu=1'
+      - '--timeout=300'
+      - '--min-instances=0'
+      - '--max-instances=10'
+      - '--set-env-vars=GCP_PROJECT_ID=$PROJECT_ID,GCP_REGION=europe-west3'
+      - '--project=$PROJECT_ID'
+
+images:
+  - 'europe-west3-docker.pkg.dev/$PROJECT_ID/rss-ingestion/nvidia-blog-mcp-server:$BUILD_ID'
+  - 'europe-west3-docker.pkg.dev/$PROJECT_ID/rss-ingestion/nvidia-blog-mcp-server:latest'
+
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: '1200s'

@@ -1,0 +1,55 @@
+MIT License
+
+Copyright (c) 2025 NVIDIA Blog MCP Server Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## Third-Party Content Disclaimer
+
+**IMPORTANT NOTICE REGARDING CONTENT OWNERSHIP:**
+
+This software aggregates and provides search access to content from NVIDIA's official blogs 
+(developer.nvidia.com and blogs.nvidia.com) via publicly available RSS feeds.
+
+**Content Ownership:**
+- All blog content, articles, and materials accessed through this service are the intellectual 
+  property of NVIDIA Corporation and/or their respective authors.
+- This software does NOT claim ownership of any content from NVIDIA blogs.
+- Content ownership and liability rest solely with NVIDIA Corporation.
+
+**User Responsibilities:**
+- Users are responsible for complying with NVIDIA's Terms of Service and any applicable 
+  copyright or intellectual property rights when using content accessed through this service.
+- Users should not store, modify, claim ownership of, or otherwise manipulate NVIDIA's 
+  content without proper authorization from NVIDIA.
+
+**No Endorsement:**
+- The aggregation of NVIDIA content through this service does not imply endorsement by NVIDIA.
+- This service is provided "as-is" and does not guarantee the accuracy, completeness, or 
+  timeliness of any third-party content.
+
+**Fair Use:**
+- This service operates under the fair use doctrine for purposes of search, discovery, and 
+  information access, with proper attribution and linking to original sources.
+
+For NVIDIA's terms and policies, please visit:
+- https://www.nvidia.com/en-us/about-nvidia/terms-of-service/
+- https://developer.nvidia.com/terms

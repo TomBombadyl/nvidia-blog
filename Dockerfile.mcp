@@ -1,0 +1,33 @@
+# Dockerfile for MCP Server Cloud Run Service
+# This is separate from the ingestion job Dockerfile
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies (minimal - no additional packages needed for MCP server)
+RUN apt-get update && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements file
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy only MCP server and query modules (not ingestion pipeline)
+COPY mcp/config.py ./
+COPY mcp/query_rag.py ./
+COPY mcp/query_vector_search.py ./
+COPY mcp/rag_query_transformer.py ./
+COPY mcp/rag_answer_grader.py ./
+COPY mcp/mcp_server.py ./
+COPY mcp/mcp_service.py ./
+
+# Set Python to run in unbuffered mode for better logging
+ENV PYTHONUNBUFFERED=1
+
+# Expose port (Cloud Run sets PORT env var)
+EXPOSE 8080
+
+# Run the MCP service
+CMD ["python", "mcp_service.py"]
