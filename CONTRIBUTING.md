@@ -26,8 +26,8 @@ By participating in this project, you agree to maintain a respectful and inclusi
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/TomBombadyl/nvidia-blog.git
-   cd nvidia-blog
+   git clone https://github.com/SynapGarden/NVIDIA_blog_mcp.git
+   cd NVIDIA_blog_mcp
    ```
 
 2. Create a virtual environment:

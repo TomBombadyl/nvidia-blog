@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2025 NVIDIA Blog MCP Server Contributors
+Copyright (c) 2025 SynapGarden
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -43,8 +43,10 @@ This software aggregates and provides search access to content from NVIDIA's off
 
 **No Endorsement:**
 - The aggregation of NVIDIA content through this service does not imply endorsement by NVIDIA.
+- SynapGarden is not affiliated with, endorsed by, or sponsored by NVIDIA Corporation.
 - This service is provided "as-is" and does not guarantee the accuracy, completeness, or 
   timeliness of any third-party content.
+- This software is free and open source, provided under the MIT License above.
 
 **Fair Use:**
 - This service operates under the fair use doctrine for purposes of search, discovery, and 

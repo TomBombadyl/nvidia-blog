@@ -67,7 +67,11 @@ nvidia_blog/
 
 ## Content Disclaimer
 
-**Important**: This service provides search access to content from NVIDIA Corporation's official blogs. All blog content is the intellectual property of NVIDIA Corporation. This software does not claim ownership of any NVIDIA content. See [LICENSE](LICENSE) and [NOTICE](NOTICE) for full details.
+**Important**: This service provides search access to content from NVIDIA Corporation's official blogs. All blog content is the intellectual property of NVIDIA Corporation. This software does not claim ownership of any NVIDIA content. 
+
+**SynapGarden is not affiliated with, endorsed by, or sponsored by NVIDIA Corporation.** This is a free and open-source project developed independently by SynapGarden.
+
+See [LICENSE](LICENSE) and [NOTICE](NOTICE) for full details.
 
 ## Contributing
 
@@ -88,8 +92,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [MCP Protocol Documentation](https://modelcontextprotocol.io)
 - [NVIDIA Developer Blog](https://developer.nvidia.com/blog)
 - [NVIDIA Official Blog](https://blogs.nvidia.com)
-- [GitHub Repository](https://github.com/TomBombadyl/nvidia-blog)
+- [GitHub Repository](https://github.com/SynapGarden/NVIDIA_blog_mcp)
+
+## Acknowledgments
+
+SynapGarden is a member of the NVIDIA Inception program and Google Cloud for Startups program. We thank them for providing resources that enable us to build useful tools for the developer community.
+
+**Note**: Program membership does not imply endorsement, sponsorship, or affiliation with NVIDIA Corporation or Google Cloud beyond program participation.
 
 ---
 
-Built for developers by developers
+Developed by [SynapGarden](https://github.com/SynapGarden) | Free and Open Source
