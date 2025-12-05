@@ -1,19 +1,17 @@
 # NVIDIA Blog MCP Server
 
-A production-ready [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that provides searchable access to NVIDIA's official developer and blog content. This server enables AI assistants like Cursor to search and retrieve information from NVIDIA's extensive blog archives with grounded, factual responses.
+A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that provides AI assistants like Cursor with grounded access to NVIDIA's official developer and blog content through Retrieval-Augmented Generation (RAG).
 
 ## Features
 
-- **Dual Search Methods**: RAG (Retrieval-Augmented Generation) and Vector Search
-- **AI-Powered Query Enhancement**: Automatic query transformation and answer grading
-- **Comprehensive Coverage**: Access to 100+ NVIDIA blog posts from developer.nvidia.com and blogs.nvidia.com
-- **Always Up-to-Date**: Daily automated ingestion keeps the database current with latest NVIDIA content
-- **Production Ready**: Deployed on Google Cloud Run with high availability
-- **Grounded Responses**: All answers include source citations from official NVIDIA blogs
+- **Grounded Context with RAG**: Retrieval-Augmented Generation ensures all responses include source citations from official NVIDIA blogs
+- **AI-Powered Query Enhancement**: Automatic query transformation and answer grading for higher quality results
+- **Current Content**: Blog posts indexed from December 1, 2025 onwards. Older content is not yet ingested; all future posts will be automatically added via daily updates
+- **Accurate Responses**: Built-in answer quality evaluation prevents hallucinations
 
 ## Quick Start for Cursor
 
-Add this to your Cursor MCP configuration file (usually `~/.cursor/mcp.json` or `%APPDATA%\Cursor\User\mcp.json`):
+In Cursor settings, add this .json block to your Cursor MCP configuration (usually `~/.cursor/mcp.json` or `%APPDATA%\Cursor\User\mcp.json`):
 
 ```json
 {
@@ -26,57 +24,25 @@ Add this to your Cursor MCP configuration file (usually `~/.cursor/mcp.json` or 
 }
 ```
 
-After adding this configuration, restart Cursor. You can then ask questions like:
-- "What's new in robotics from NVIDIA?"
-- "How do I optimize CUDA kernels?"
-- "What are the latest TensorRT features?"
+After adding this configuration, restart Cursor. You can then ask questions about NVIDIA technologies, and the server will search the NVIDIA blog archives to provide grounded answers with source citations.
 
 ## How It Works
 
 ### Data Pipeline
 
-The server maintains an up-to-date database through a daily automated ingestion pipeline:
+The server maintains a database through a daily automated ingestion pipeline:
 
 1. **RSS Feed Collection**: Fetches new posts from NVIDIA's official RSS feeds
 2. **Content Processing**: Cleans and processes HTML content into searchable text
-3. **AI Indexing**: Ingests content into Vertex AI RAG Corpus and Vector Search
+3. **RAG Indexing**: Ingests content into Vertex AI RAG Corpus for semantic search
 4. **Daily Updates**: Runs automatically every day at 7:00 AM UTC
 
-### Search Capabilities
+### Response Quality
 
-**RAG Method** (default):
-- Returns full text chunks with source citations
-- Includes query transformation for better results
-- Answer grading ensures quality responses
-- Best for comprehensive answers with citations
-
-**Vector Search Method**:
-- Semantic similarity search
-- Fast retrieval of related content
-- Returns document IDs with similarity scores
-- Best for finding conceptually similar content
-
-## Usage Examples
-
-### Basic Query
-```
-"What are CUDA programming best practices?"
-```
-
-### Specific Technology
-```
-"Tell me about TensorRT inference optimization"
-```
-
-### Latest Updates
-```
-"What's new in autonomous driving from NVIDIA?"
-```
-
-### Research Topics
-```
-"How does NVIDIA approach multi-GPU training?"
-```
+All responses are graded for:
+- **Relevance**: How well the retrieved content matches the query
+- **Completeness**: Whether the answer covers the topic adequately
+- **Grounding**: All answers include source citations and links to original NVIDIA blog posts
 
 ## Project Structure
 
@@ -97,117 +63,6 @@ nvidia_blog/
 ├── NOTICE                    # Third-party content notice
 ├── CONTRIBUTING.md           # Contribution guidelines
 └── SECURITY.md               # Security policy
-```
-
-## Configuration
-
-The server uses environment variables for configuration. These are set in the Cloud Run deployment environment.
-
-Key configuration variables:
-- `GCP_PROJECT_ID`: Your Google Cloud project ID
-- `GCP_REGION`: GCP region (default: europe-west3)
-- `RAG_CORPUS`: Vertex AI RAG Corpus resource path
-- `VECTOR_SEARCH_ENDPOINT_ID`: Vector Search endpoint ID
-- `VECTOR_SEARCH_INDEX_ID`: Vector Search index ID
-- `RAG_VECTOR_DISTANCE_THRESHOLD`: Similarity threshold (default: 0.5)
-- `GEMINI_MODEL_LOCATION`: Location for Gemini models (default: europe-west4)
-
-## Development
-
-### Prerequisites
-
-- Python 3.9+
-- Google Cloud SDK
-- GCP project with Vertex AI API enabled
-- Service account with appropriate permissions
-
-### Local Setup
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/TomBombadyl/nvidia-blog.git
-   cd nvidia-blog
-   ```
-
-2. Create virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Authenticate with GCP:
-   ```bash
-   gcloud auth application-default login
-   ```
-
-### Running Locally
-
-The MCP server is designed to run on Cloud Run, but you can test the server locally:
-
-```bash
-cd mcp
-python mcp_service.py
-```
-
-**Note**: The server expects all MCP modules to be in the same directory. When running locally, ensure you're in the `mcp/` directory or adjust Python path accordingly. The server will start on `http://localhost:8080` by default (or the port specified by the `PORT` environment variable).
-
-## Deployment
-
-The server is deployed to Google Cloud Run using Cloud Build. See `cloudbuild.mcp.yaml` for deployment configuration.
-
-```bash
-gcloud builds submit --config cloudbuild.mcp.yaml --project=your-project-id
-```
-
-## Troubleshooting
-
-### Common Issues
-
-**Server fails to start locally:**
-- Ensure you're in the `mcp/` directory when running `python mcp_service.py`
-- Verify all dependencies are installed: `pip install -r requirements.txt`
-- Check that GCP authentication is configured: `gcloud auth application-default login`
-
-**Import errors:**
-- Verify all MCP modules (`mcp_server.py`, `query_rag.py`, etc.) are in the same directory
-- Check Python path includes the `mcp/` directory
-
-**GCP authentication errors:**
-- Ensure service account has proper permissions for Vertex AI RAG Corpus and Vector Search
-- Verify `GCP_PROJECT_ID` and other environment variables are set correctly in Cloud Run
-
-**Query returns no results:**
-- Check that the RAG Corpus and Vector Search index are properly configured
-- Verify the ingestion pipeline has run successfully
-- Check distance threshold settings (default: 0.5)
-
-## API Response Format
-
-### RAG Response
-```json
-{
-  "query": "original query",
-  "transformed_query": "enhanced query",
-  "contexts": [
-    {
-      "text": "retrieved content",
-      "source_uri": "https://developer.nvidia.com/blog/...",
-      "distance": 0.45
-    }
-  ],
-  "count": 10,
-  "grade": {
-    "score": 0.85,
-    "relevance": 0.90,
-    "completeness": 0.80,
-    "grounded": true
-  }
-}
 ```
 
 ## Content Disclaimer
@@ -234,31 +89,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [NVIDIA Developer Blog](https://developer.nvidia.com/blog)
 - [NVIDIA Official Blog](https://blogs.nvidia.com)
 - [GitHub Repository](https://github.com/TomBombadyl/nvidia-blog)
-
-## Status
-
-**Operational** - Server is live and serving queries  
-**Database**: 100+ blog posts indexed and searchable  
-**Updates**: Daily automated ingestion active  
-**Search Metrics**: Vector distance threshold 0.5, default 10 neighbors
-
-## Architecture
-
-The MCP server uses a production-ready architecture:
-
-- **Search Methods**: Dual RAG and Vector Search with configurable thresholds
-- **Query Enhancement**: Automatic query transformation using Gemini 2.0 Flash
-- **Quality Assurance**: Answer grading with iterative refinement (up to 2 iterations)
-- **Deployment**: Google Cloud Run with automatic scaling
-- **Data Pipeline**: Daily automated RSS ingestion keeps content current
-
-## Performance
-
-- **Default Results**: 10 neighbors/contexts per query
-- **Distance Threshold**: 0.5 (balanced for recall and precision)
-- **Response Time**: Sub-second for most queries
-- **Availability**: High availability on Cloud Run
-- **Gemini Integration**: Query transformation and grading via europe-west4 (Netherlands, closest to RAG corpus in europe-west3 for data residency)
 
 ---
 
