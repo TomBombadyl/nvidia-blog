@@ -82,7 +82,7 @@ class RAGQueryResult(BaseModel):
     transformed_query: Optional[str] = Field(None, description="Transformed query used for retrieval (if transformation was applied)")
     contexts: List[RAGContext] = Field(
         default_factory=list,
-        description="List of relevant text chunks with metadata and source URIs for citation"
+        description="List of relevant text chunks with metadata from official NVIDIA blog content"
     )
     count: int = Field(..., description="Number of contexts returned")
     grade: Optional[dict] = Field(
@@ -219,8 +219,8 @@ def search_nvidia_blogs(
       and grounding to ensure high-quality results.
     - **Iterative Refinement**: If initial results are graded poorly, the system
       automatically refines the query and retries retrieval up to 2 times.
-    - **Strict Grounding**: All responses are grounded in retrieved contexts with
-      inline citations to source URIs, preventing hallucinations.
+    - **Strict Grounding**: All responses are grounded in retrieved contexts from
+      official NVIDIA sources, preventing hallucinations.
 
     The tool uses Retrieval-Augmented Generation (RAG) to search through processed
     blog posts containing tutorials, code examples, best practices, technical guides,
@@ -247,7 +247,6 @@ def search_nvidia_blogs(
         SearchResult containing verified blog content with:
         - Full text chunks from official NVIDIA blog posts (RAG method)
         - Or semantic similarity matches with document IDs (Vector method)
-        - Source URIs pointing to original blog posts
         - Similarity scores indicating relevance
 
     Use Cases:

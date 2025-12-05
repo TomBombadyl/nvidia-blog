@@ -4,7 +4,7 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that pr
 
 ## Features
 
-- **Grounded Context with RAG**: Retrieval-Augmented Generation ensures all responses include source citations from official NVIDIA blogs
+- **Grounded Context with RAG**: Retrieval-Augmented Generation provides responses based on content from official NVIDIA blogs
 - **AI-Powered Query Enhancement**: Automatic query transformation and answer grading for higher quality results
 - **Current Content**: Blog posts indexed from December 1, 2025 onwards. Older content is not yet ingested; all future posts will be automatically added via daily updates
 - **Accurate Responses**: Built-in answer quality evaluation prevents hallucinations
@@ -24,7 +24,7 @@ In Cursor settings, add this .json block to your Cursor MCP configuration (usual
 }
 ```
 
-After adding this configuration, restart Cursor. You can then ask questions about NVIDIA technologies, and the server will search the NVIDIA blog archives to provide grounded answers with source citations.
+After adding this configuration, restart Cursor. You can then ask questions about NVIDIA technologies, and the server will search the NVIDIA blog archives to provide grounded answers based on official NVIDIA content.
 
 ## How It Works
 
@@ -42,7 +42,7 @@ The server maintains a database through a daily automated ingestion pipeline:
 All responses are graded for:
 - **Relevance**: How well the retrieved content matches the query
 - **Completeness**: Whether the answer covers the topic adequately
-- **Grounding**: All answers include source citations and links to original NVIDIA blog posts
+- **Grounding**: All answers are based on content from official NVIDIA blog posts
 
 ## Project Structure
 
