@@ -47,8 +47,7 @@ MAX_RETRIES = int(os.getenv("MAX_RETRIES", "3"))
 REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "30"))
 
 # RAG Query Configuration
-# Increased from 0.5 to 0.8 to allow more semantic matches (lower = stricter, higher = more permissive)
-RAG_VECTOR_DISTANCE_THRESHOLD = float(os.getenv("RAG_VECTOR_DISTANCE_THRESHOLD", "0.8"))
+RAG_VECTOR_DISTANCE_THRESHOLD = float(os.getenv("RAG_VECTOR_DISTANCE_THRESHOLD", "0.5"))
 
 # Gemini Model Configuration
 # Gemini models are available in europe-west4 (Netherlands) - closest to europe-west3 (Frankfurt)

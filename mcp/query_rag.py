@@ -96,7 +96,7 @@ class RAGQuery:
         self,
         query_text: str,
         similarity_top_k: int = 10,
-        vector_distance_threshold: float = 0.8
+        vector_distance_threshold: float = 0.5
     ) -> List[Dict]:
         """
         Internal method to retrieve contexts from RAG Corpus.
@@ -161,7 +161,7 @@ class RAGQuery:
         self,
         query_text: str,
         similarity_top_k: int = 10,
-        vector_distance_threshold: float = 0.8
+        vector_distance_threshold: float = 0.5
     ) -> Dict:
         """
         Enhanced query RAG Corpus with transformation, grading, and iterative refinement.
@@ -169,7 +169,7 @@ class RAGQuery:
         Args:
             query_text: The original user query text
             similarity_top_k: Number of top results (default: 10)
-            vector_distance_threshold: Minimum similarity (default: 0.8)
+            vector_distance_threshold: Minimum similarity (default: 0.5)
 
         Returns:
             Dictionary containing:
