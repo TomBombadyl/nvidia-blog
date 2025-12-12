@@ -49,3 +49,7 @@ assets/
 
 # Private folder (ingestion pipeline - not needed in public repo)
 private/
+
+# Cursor IDE files
+.cursor/
+*.cursor/
