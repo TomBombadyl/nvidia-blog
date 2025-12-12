@@ -15,15 +15,15 @@ BUCKET_NAME = os.getenv("GCS_BUCKET_NAME", "nvidia-blogs-raw")
 RAG_CORPUS = os.getenv(
     "RAG_CORPUS",
     "projects/nvidia-blog/locations/europe-west3/"
-    "ragCorpora/8070450532247928832"
+    "ragCorpora/8496040697034440704"  # RAG Corpus with multilingual embedding model
 )
 VECTOR_SEARCH_ENDPOINT_ID = os.getenv(
     "VECTOR_SEARCH_ENDPOINT_ID", "8740721616633200640"
 )
 VECTOR_SEARCH_INDEX_ID = os.getenv(
-    "VECTOR_SEARCH_INDEX_ID", "3602747760501063680"
+    "VECTOR_SEARCH_INDEX_ID", "1196910765810909184"  # blog_data_clean (Stream method for RAG Corpus)
 )
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-004")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-multilingual-embedding-002")
 
 # RSS Feed Configuration
 RSS_FEEDS: Dict[str, Dict[str, str]] = {
@@ -42,7 +42,7 @@ RSS_FEEDS: Dict[str, Dict[str, str]] = {
 }
 
 # Processing Configuration
-MIN_TEXT_LENGTH = int(os.getenv("MIN_TEXT_LENGTH", "100"))
+MIN_TEXT_LENGTH = int(os.getenv("MIN_TEXT_LENGTH", "10"))
 MAX_RETRIES = int(os.getenv("MAX_RETRIES", "3"))
 REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "30"))
 

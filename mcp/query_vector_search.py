@@ -20,7 +20,7 @@ class VectorSearchQuery:
         endpoint_id: str,
         index_id: str,
         region: str,
-        model: str = "text-embedding-004"
+        model: str = "text-multilingual-embedding-002"
     ):
         """
         Initialize Vector Search query interface.
@@ -29,7 +29,7 @@ class VectorSearchQuery:
             endpoint_id: Vector Search endpoint ID
             index_id: Vector Search index ID
             region: GCP region
-            model: Embedding model name (default: text-embedding-004)
+            model: Embedding model name (default: text-multilingual-embedding-002)
         """
         self.endpoint_id = endpoint_id
         self.index_id = index_id

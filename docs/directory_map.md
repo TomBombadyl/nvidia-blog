@@ -12,10 +12,7 @@ z:\SynapGarden\nvidia_blog/
 ├── 📄 requirements.txt                   # Python dependencies (feedparser, requests, beautifulsoup4, google-cloud-*, vertexai, mcp, pydantic, uvicorn, starlette)
 ├── 📄 Dockerfile.mcp                     # Container for MCP Server Cloud Run service
 ├── 📄 cloudbuild.mcp.yaml                # CI/CD config for MCP Server deployment
-│
-├── 📄 CLOUD_INVENTORY.md                 # GCP resource inventory and configuration
-├── 📄 DATE_AWARENESS_FIX_LOG.md          # Documentation of date awareness fixes (Attempts 1-3)
-├── 📄 COMMIT_MSG.txt                     # Commit message reference
+├── 📄 CREATE_RAG_INDEX_STEPS.md          # Step-by-step guide for RAG Corpus setup
 │
 ├── 📁 mcp/                               # MCP Server Implementation (Read-only Query Interface)
 │   ├── 📄 config.py                      # Configuration management (RAG_VECTOR_DISTANCE_THRESHOLD=0.7, Gemini, RSS feeds)
@@ -34,8 +31,7 @@ z:\SynapGarden\nvidia_blog/
 │   ├── 📄 rag_ingest.py                  # RAG Corpus ingestion via REST API (chunk_size=768, overlap=128)
 │   ├── 📄 vector_search_ingest.py        # Vector embedding and upsert to Vector Search index
 │   ├── 📄 Dockerfile                     # Container for ingestion Cloud Run Job
-│   ├── 📄 cloudbuild.yaml                # CI/CD config for ingestion job deployment
-│   └── 📄 kaggle_submission.ipynb        # (Legacy/archival)
+│   └── 📄 cloudbuild.yaml                # CI/CD config for ingestion job deployment
 │
 └── 📁 assets/                            # Screenshot/image assets (Cursor workspace images)
     └── [14 image files]

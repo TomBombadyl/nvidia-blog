@@ -6,7 +6,6 @@ Provides query capabilities for Vertex AI RAG Corpus with iterative refinement.
 import logging
 import re
 import requests
-import time
 from typing import Dict, List
 from google.auth import default
 from google.auth.transport.requests import Request
@@ -17,11 +16,6 @@ from config import GEMINI_MODEL_LOCATION, GEMINI_MODEL_NAME, RAG_VECTOR_DISTANCE
 logger = logging.getLogger(__name__)
 # Enable debug logging to diagnose API response structure
 logger.setLevel(logging.DEBUG)
-
-# Retry configuration for Google API rate limiting
-MAX_RETRIES = 5
-INITIAL_BACKOFF = 1  # seconds
-MAX_BACKOFF = 60  # seconds
 
 
 class RAGQuery:
@@ -101,91 +95,6 @@ class RAGQuery:
             self.credentials.refresh(Request())
         return self.credentials.token
     
-    def _make_api_call_with_retry(self, url: str, request_body: Dict, headers: Dict) -> Dict:
-        """
-        Make API call with exponential backoff retry logic to handle rate limiting.
-        
-        Google's Vertex AI RAG API can return 417 errors when rate limited.
-        This method retries with exponential backoff.
-        
-        Args:
-            url: API endpoint URL
-            request_body: Request body as dict
-            headers: Request headers
-        
-        Returns:
-            Parsed JSON response
-        
-        Raises:
-            Exception: If all retries fail
-        """
-        backoff = INITIAL_BACKOFF
-        last_error = None
-        
-        for attempt in range(MAX_RETRIES):
-            try:
-                # Remove Expect header to avoid 417 errors (Expect: 100-continue issues)
-                safe_headers = headers.copy()
-                
-                logger.info(f"API call attempt {attempt + 1}/{MAX_RETRIES}")
-                
-                response = requests.post(
-                    url,
-                    headers=safe_headers,
-                    json=request_body,
-                    timeout=60
-                )
-                
-                # Success
-                if response.status_code == 200:
-                    logger.debug(f"API call succeeded on attempt {attempt + 1}")
-                    return response.json()
-                
-                # Rate limit errors - retry with backoff
-                elif response.status_code in [429, 417, 503]:  # 429=Too Many Requests, 417=Expectation Failed, 503=Service Unavailable
-                    last_error = (
-                        f"Rate limit/temporary error {response.status_code}: {response.text[:200]}"
-                    )
-                    logger.warning(
-                        f"API returned {response.status_code} (rate limited?). "
-                        f"Retrying in {backoff} seconds... (attempt {attempt + 1}/{MAX_RETRIES})"
-                    )
-                    
-                    if attempt < MAX_RETRIES - 1:
-                        time.sleep(backoff)
-                        backoff = min(backoff * 2, MAX_BACKOFF)  # Exponential backoff
-                    continue
-                
-                # Other errors - fail immediately
-                else:
-                    error_msg = (
-                        f"Failed to query RAG Corpus: {response.status_code} - "
-                        f"{response.text}"
-                    )
-                    logger.error(error_msg)
-                    raise Exception(error_msg)
-            
-            except requests.exceptions.RequestException as e:
-                last_error = str(e)
-                logger.warning(
-                    f"Network error on attempt {attempt + 1}/{MAX_RETRIES}: {e}. "
-                    f"Retrying in {backoff} seconds..."
-                )
-                
-                if attempt < MAX_RETRIES - 1:
-                    time.sleep(backoff)
-                    backoff = min(backoff * 2, MAX_BACKOFF)
-                else:
-                    raise
-        
-        # All retries exhausted
-        error_msg = (
-            f"Failed to query RAG Corpus after {MAX_RETRIES} attempts. "
-            f"Last error: {last_error}"
-        )
-        logger.error(error_msg)
-        raise Exception(error_msg)
-    
     def _retrieve_contexts(
         self,
         query_text: str,
@@ -223,14 +132,28 @@ class RAGQuery:
             }
         }
 
-        # Make API call with retry logic for rate limiting
+        # Make API call
         headers = {
             "Authorization": f"Bearer {self._get_access_token()}",
             "Content-Type": "application/json"
         }
 
-        # Use retry wrapper to handle rate limiting
-        result = self._make_api_call_with_retry(retrieve_url, request_body, headers)
+        response = requests.post(
+            retrieve_url,
+            headers=headers,
+            json=request_body,
+            timeout=60
+        )
+
+        if response.status_code != 200:
+            error_msg = (
+                f"Failed to query RAG Corpus: {response.status_code} - "
+                f"{response.text}"
+            )
+            logger.error(error_msg)
+            raise Exception(error_msg)
+
+        result = response.json()
         
         # Debug: Log full API response structure to diagnose empty text issue
         if logger.isEnabledFor(logging.DEBUG):
@@ -324,9 +247,6 @@ class RAGQuery:
             # Filter out header-only or very short chunks
             # These often occur when date queries match metadata headers
             filtered_contexts = []
-            skipped_empty_count = 0
-            skipped_header_only_count = 0
-            
             for ctx in contexts:
                 if isinstance(ctx, dict):
                     text = ctx.get("text", "")
@@ -359,23 +279,14 @@ class RAGQuery:
                         if len(content_without_header) >= 100:
                             filtered_contexts.append(ctx)
                         else:
-                            skipped_header_only_count += 1
                             logger.debug(
-                                f"Filtered out header-only chunk (content length after header removal: {len(content_without_header)}, distance: {ctx.get('distance', 'N/A')})"
+                                f"Filtered out header-only chunk (content length after header removal: {len(content_without_header)})"
                             )
                     else:
                         # Skip chunks with empty text - don't add them to filtered contexts
-                        skipped_empty_count += 1
                         logger.debug(f"Skipped chunk with empty text field (distance: {ctx.get('distance', 'N/A')})")
                 else:
                     filtered_contexts.append(ctx)
-            
-            # Log summary if we filtered out many contexts
-            if skipped_empty_count > 0 or skipped_header_only_count > 0:
-                logger.info(
-                    f"Filtered contexts: {skipped_empty_count} empty text, {skipped_header_only_count} header-only. "
-                    f"Kept {len(filtered_contexts)} substantial contexts out of {len(contexts)} retrieved."
-                )
             
             contexts = filtered_contexts
             

@@ -5,6 +5,7 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that pr
 ## Features
 
 - **Grounded Context with RAG**: Retrieval-Augmented Generation provides responses based on content from official NVIDIA blogs
+- **Multilingual Support**: Uses `text-multilingual-embedding-002` for semantic search across 50+ languages
 - **AI-Powered Query Enhancement**: Automatic query transformation and answer grading for higher quality results
 - **Current Content**: Blog posts indexed from December 1, 2025 onwards. Older content is not yet ingested; all future posts will be automatically added via daily updates
 - **Accurate Responses**: Built-in answer quality evaluation prevents hallucinations
