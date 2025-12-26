@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant User
+    participant MCP as MCP Server
+    participant QT as Query Transformer
+    participant RC as RAG Corpus
+    participant AG as Answer Grader
+    
+    User->>MCP: POST /mcp (query)
+    MCP->>QT: transform_query(query)
+    QT->>QT: Gemini 2.0 Flash API
+    QT-->>MCP: transformed_query
+    
+    MCP->>RC: retrieveContexts(transformed_query)
+    RC->>RC: Embed Query
+    RC->>RC: Semantic Search
+    RC-->>MCP: contexts[]
+    
+    MCP->>AG: grade_contexts(query, contexts)
+    AG->>AG: Gemini 2.0 Flash API
+    AG-->>MCP: AnswerGrade
+    
+    alt Grade.should_refine == true
+        MCP->>QT: refine_query(query, grade)
+        QT->>QT: Gemini 2.0 Flash API
+        QT-->>MCP: refined_query
+        MCP->>RC: retrieveContexts(refined_query)
+        RC-->>MCP: contexts[]
+        MCP->>AG: grade_contexts(query, contexts)
+        AG-->>MCP: AnswerGrade
+    end
+    
+    MCP-->>User: RAGQueryResult (JSON)
+
