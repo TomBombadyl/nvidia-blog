@@ -5,6 +5,7 @@ This server does NOT modify the database - only the scheduled ingestion jobs can
 """
 
 import logging
+import re
 import sys
 from typing import Optional, Union, List, Any, Dict
 from pydantic import BaseModel, Field, model_validator
@@ -90,6 +91,10 @@ class RAGQueryResult(BaseModel):
     refinement_iterations: int = Field(
         0,
         description="Number of query refinement iterations performed (0 = no refinement needed)"
+    )
+    message: Optional[str] = Field(
+        None,
+        description="Optional message when no results are found, providing helpful guidance to the user"
     )
 
 
@@ -189,6 +194,52 @@ def get_vector_query():
             logger.exception("Failed to initialize VectorSearchQuery")
             raise
     return _vector_query
+
+
+def _generate_alternative_queries(original_query: str, transformed_query: Optional[str] = None) -> List[str]:
+    """
+    Generate alternative query variations to try when initial search returns 0 results.
+    
+    Args:
+        original_query: The original user query
+        transformed_query: The transformed query (if available)
+    
+    Returns:
+        List of alternative query variations to try
+    """
+    alternatives = []
+    
+    # Use transformed query as base if available, otherwise use original
+    base_query = transformed_query if transformed_query else original_query
+    
+    # Try 1: Add "NVIDIA" if not present
+    if "NVIDIA" not in base_query.upper():
+        alternatives.append(f"NVIDIA {base_query}")
+    
+    # Try 2: Simplify to key terms
+    words = base_query.split()
+    if len(words) > 3:
+        # Take first 3-4 important words
+        key_terms = [w for w in words[:4] if len(w) > 2 and w.lower() not in ['the', 'a', 'an', 'and', 'or', 'for', 'with', 'from']]
+        if key_terms:
+            alternatives.append(" ".join(key_terms))
+    
+    # Try 3: Broaden the query (remove specific terms, keep general ones)
+    if base_query != original_query:
+        alternatives.append(original_query)  # Try original if we had a transformation
+    
+    # Try 4: Add "blog" or "article" context
+    if "blog" not in base_query.lower() and "article" not in base_query.lower():
+        alternatives.append(f"{base_query} blog")
+    
+    # Try 5: Remove temporal references and try broader search
+    temporal_pattern = r'\b(December|January|February|March|April|May|June|July|August|September|October|November)\s+\d{4}\b'
+    broad_query = re.sub(temporal_pattern, '', base_query, flags=re.IGNORECASE).strip()
+    if broad_query and broad_query != base_query:
+        alternatives.append(broad_query)
+    
+    # Limit to 5 alternatives max
+    return alternatives[:5]
 
 
 @mcp.tool()
@@ -296,8 +347,61 @@ def search_nvidia_blogs(
                 refinement_iterations=result_dict.get("refinement_iterations", 0)
             )
 
+            # If no results found, try alternative queries
+            if result.count == 0:
+                logger.info(
+                    f"No results found for initial query: '{query[:50]}...'. "
+                    f"Trying alternative query variations..."
+                )
+                
+                alternative_queries = _generate_alternative_queries(
+                    query,
+                    result.transformed_query
+                )
+                
+                # Try up to 5 alternative queries
+                for alt_query in alternative_queries[:5]:
+                    logger.info(f"Trying alternative query: '{alt_query[:50]}...'")
+                    alt_result_dict = rag_query.query(
+                        query_text=alt_query,
+                        similarity_top_k=top_k,
+                        vector_distance_threshold=RAG_VECTOR_DISTANCE_THRESHOLD
+                    )
+                    
+                    alt_contexts = [
+                        RAGContext.model_validate(ctx) if isinstance(ctx, dict) else ctx
+                        for ctx in alt_result_dict.get("contexts", [])
+                    ]
+                    
+                    if len(alt_contexts) > 0:
+                        # Found results with alternative query!
+                        logger.info(
+                            f"Found {len(alt_contexts)} contexts with alternative query: '{alt_query[:50]}...'"
+                        )
+                        result = RAGQueryResult(
+                            query=result.query,  # Keep original query
+                            transformed_query=alt_query,  # Show which alternative worked
+                            contexts=alt_contexts,
+                            count=len(alt_contexts),
+                            grade=alt_result_dict.get("grade"),
+                            refinement_iterations=alt_result_dict.get("refinement_iterations", 0)
+                        )
+                        return result
+                
+                # All alternative queries also returned 0 results
+                logger.info(
+                    f"All {len(alternative_queries)} alternative queries returned 0 results. "
+                    f"Informing user that no content was found."
+                )
+                result.message = (
+                    "I wasn't able to find any relevant content in the indexed NVIDIA blog posts "
+                    "for your query. This could mean the topic hasn't been covered yet, or it may "
+                    "be in older posts not yet indexed. You can browse the full database of NVIDIA "
+                    "blog posts at https://blogs.nvidia.com/ to find what you're looking for."
+                )
+
             logger.info(
-                f"RAG search successful: '{query[:50]}...' "
+                f"RAG search complete: '{query[:50]}...' "
                 f"returned {result.count} contexts"
             )
             return result
