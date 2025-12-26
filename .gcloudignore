@@ -68,3 +68,4 @@ application_default_credentials.json
 !mcp/
 !requirements.txt
 
+.cursor/

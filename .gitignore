@@ -46,6 +46,7 @@ application_default_credentials.json
 
 # Assets (screenshots, images, etc.)
 assets/
+docs/
 
 # Private folder (ingestion pipeline - not needed in public repo)
 private/
