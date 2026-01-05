@@ -4,56 +4,53 @@ __pycache__/
 *$py.class
 *.so
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Virtual environments
 venv/
 env/
 ENV/
+.venv
+*.egg-info/
+dist/
+build/
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# OS
+*~
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
-
-# Environment variables
+# Environment
 .env
 .env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Google Cloud
+.gcloud/
+application_default_credentials.json
 
 # Temporary files
 *.tmp
-*.temp
+*.bak
+*.swp
 
-# Documentation builds
-docs/_build/
+# Assets (screenshots, images, etc.)
+assets/
+docs/
 
-# Analysis and comparison files
-*_COMPARISON.md
-*_ANALYSIS.md
-*_RESULTS.md
-
-# Private development files
+# Private folder (ingestion pipeline - not needed in public repo)
 private/
-archive/
+
+# Cursor IDE files
+.cursor/
+*.cursor/
