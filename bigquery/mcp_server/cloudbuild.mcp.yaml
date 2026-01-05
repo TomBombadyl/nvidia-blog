@@ -1,5 +1,5 @@
 steps:
-  # Build Docker image for MCP Server
+  # Build Docker image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
@@ -20,7 +20,6 @@ steps:
       - 'europe-west3-docker.pkg.dev/$PROJECT_ID/rss-ingestion/nvidia-blog-mcp'
 
   # Deploy to Cloud Run Service
-  # Service account cloud-run-rss-ingestor is used for the service identity
   # Service is publicly accessible (no authentication required for MCP endpoint)
   - id: 'deploy-service'
     name: 'gcr.io/cloud-builders/gcloud'
@@ -40,6 +39,7 @@ steps:
       - '--min-instances=0'
       - '--max-instances=10'
       - '--set-env-vars=GCP_PROJECT_ID=$PROJECT_ID,GCP_REGION=europe-west3'
+      - '--update-annotations=run.googleapis.com/invoker-iam-disabled=true'
       - '--project=$PROJECT_ID'
 
 images:
@@ -51,3 +51,4 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 timeout: '1200s'
+

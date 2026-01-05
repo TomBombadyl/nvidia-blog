@@ -1,0 +1,24 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY bigquery/requirements.txt /app/requirements.txt
+# Also need dependencies from existing mcp/ for transformer and grader
+COPY requirements.txt /app/requirements_mcp.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -r requirements_mcp.txt
+
+# Copy MCP server code
+COPY bigquery/mcp_server/ /app/bigquery/mcp_server/
+# Copy shared utilities
+COPY bigquery/shared/ /app/bigquery/shared/
+# Copy archived mcp/ for transformer and grader imports
+COPY archive/mcp-rag-corpus/ /app/archive/mcp-rag-corpus/
+
+# Set Python path
+ENV PYTHONPATH=/app
+
+# Run MCP server
+CMD ["python", "-m", "bigquery.mcp_server.mcp_service"]
+

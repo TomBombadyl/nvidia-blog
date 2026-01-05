@@ -1,0 +1,3 @@
+﻿spec:
+  rules:
+  - enforce: false

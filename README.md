@@ -21,12 +21,14 @@ In Cursor settings, add this .json block to your Cursor MCP configuration (usual
 {
   "mcpServers": {
     "nvidia-blog": {
-      "url": "https://nvidia-blog-mcp-server-4vvir4xvda-ey.a.run.app/mcp",
+      "url": "https://nvidia-blog-mcp-xxx.run.app/mcp",
       "transport": "streamable-http"
     }
   }
 }
 ```
+
+**Note**: The service URL will be updated after deployment. The previous RAG Corpus-based MCP has been archived in favor of the BigQuery-based implementation for improved performance and date-aware searching.
 
 After adding this configuration, restart Cursor. You can then ask questions about NVIDIA technologies, and the server will search the NVIDIA blog archives to provide grounded answers based on official NVIDIA content.
 
@@ -38,8 +40,10 @@ The server maintains a database through a daily automated ingestion pipeline:
 
 1. **RSS Feed Collection**: Fetches new posts from NVIDIA's official RSS feeds
 2. **Content Processing**: Cleans and processes HTML content into searchable text
-3. **RAG Indexing**: Ingests content into Vertex AI RAG Corpus for semantic search
+3. **BigQuery Indexing**: Ingests content into BigQuery with vector embeddings for semantic search
 4. **Daily Updates**: Runs automatically every day at 7:00 AM UTC
+
+**Note**: The previous RAG Corpus-based implementation has been archived. The current implementation uses BigQuery with ML.DISTANCE for improved performance and date-aware filtering capabilities.
 
 ### Response Quality
 
@@ -52,17 +56,22 @@ All responses are graded for:
 
 ```
 nvidia_blog/
-├── mcp/                      # MCP server implementation
-│   ├── mcp_server.py         # Main MCP server
-│   ├── mcp_service.py        # Cloud Run service entry point
-│   ├── query_rag.py          # RAG Corpus query module
-│   ├── query_vector_search.py # Vector Search query module
-│   ├── rag_query_transformer.py # Query enhancement
-│   ├── rag_answer_grader.py  # Answer quality evaluation
-│   └── config.py             # Configuration management
+├── bigquery/
+│   └── mcp_server/           # Primary MCP server implementation (BigQuery-based)
+│       ├── mcp_server.py      # Main MCP server
+│       ├── mcp_service.py     # Cloud Run service entry point
+│       ├── query_bigquery.py  # BigQuery query module with ML.DISTANCE
+│       ├── date_filter_extractor.py # Date-aware query filtering
+│       └── config.py          # Configuration management
+├── archive/
+│   └── mcp-rag-corpus/       # Archived RAG Corpus implementation
+│       ├── mcp_server.py      # Original RAG Corpus server
+│       ├── query_rag.py       # RAG Corpus query module
+│       ├── rag_query_transformer.py # Query enhancement
+│       └── rag_answer_grader.py # Answer quality evaluation
 ├── Dockerfile.mcp            # Container definition
 ├── cloudbuild.mcp.yaml       # CI/CD configuration
-├── requirements.txt           # Python dependencies
+├── requirements.txt          # Python dependencies
 ├── LICENSE                   # MIT License
 ├── NOTICE                    # Third-party content notice
 ├── CONTRIBUTING.md           # Contribution guidelines

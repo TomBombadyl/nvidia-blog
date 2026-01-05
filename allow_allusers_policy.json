@@ -1,0 +1,13 @@
+﻿{
+  "spec": {
+    "rules": [
+      {
+        "values": {
+          "allowedValues": [
+            "allUsers"
+          ]
+        }
+      }
+    ]
+  }
+}
