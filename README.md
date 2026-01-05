@@ -21,14 +21,14 @@ In Cursor settings, add this .json block to your Cursor MCP configuration (usual
 {
   "mcpServers": {
     "nvidia-blog": {
-      "url": "https://nvidia-blog-mcp-xxx.run.app/mcp",
+      "url": "https://nvidia-blog-mcp-4vvir4xvda-ey.a.run.app/mcp",
       "transport": "streamable-http"
     }
   }
 }
 ```
 
-**Note**: The service URL will be updated after deployment. The previous RAG Corpus-based MCP has been archived in favor of the BigQuery-based implementation for improved performance and date-aware searching.
+**⚠️ IMPORTANT UPDATE REQUIRED**: The MCP configuration now requires the `"transport": "streamable-http"` field. If you're using an older configuration, you must add this field to your `mcp.json` file and restart Cursor. Without this field, the MCP connection will not work properly.
 
 After adding this configuration, restart Cursor. You can then ask questions about NVIDIA technologies, and the server will search the NVIDIA blog archives to provide grounded answers based on official NVIDIA content.
 
