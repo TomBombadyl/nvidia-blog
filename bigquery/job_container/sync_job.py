@@ -240,15 +240,33 @@ class ResilientBigQuerySync:
         return chunks
     
     def generate_embeddings_batch(self, chunks: List[Dict]) -> List[List[float]]:
-        """Generate embeddings for a batch of chunks."""
+        """
+        Generate embeddings for a batch of chunks.
+        
+        Returns list of embedding vectors (each as List[float]).
+        Uses .values attribute from TextEmbedding objects, matching the pattern
+        used in query_bigquery.py for consistency.
+        """
         texts = [chunk['text'] for chunk in chunks]
         embeddings = self.embedding_model.get_embeddings(texts)
-        return embeddings
+        if not embeddings or len(embeddings) == 0:
+            raise ValueError("No embeddings returned from model")
+        # Extract .values from TextEmbedding objects (matches query_bigquery.py pattern)
+        return [emb.values for emb in embeddings]
     
     def generate_embedding(self, chunk: Dict) -> List[float]:
-        """Generate embedding for a single chunk."""
-        embedding = self.embedding_model.get_embeddings([chunk['text']])[0]
-        return embedding
+        """
+        Generate embedding for a single chunk.
+        
+        Returns embedding vector as List[float].
+        Uses .values attribute from TextEmbedding object, matching the pattern
+        used in query_bigquery.py for consistency.
+        """
+        embeddings = self.embedding_model.get_embeddings([chunk['text']])
+        if not embeddings or len(embeddings) == 0:
+            raise ValueError("No embeddings returned from model")
+        # Extract .values from TextEmbedding object (matches query_bigquery.py pattern)
+        return embeddings[0].values
     
     def is_token_limit_error(self, error: Exception) -> bool:
         """Check if error is due to token limit exceeded."""
