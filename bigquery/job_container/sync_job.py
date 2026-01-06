@@ -82,28 +82,70 @@ class ResilientBigQuerySync:
             logger.warning(f"Error getting processed items: {e}, assuming none processed")
             return set()
     
-    def get_items_to_process(self, feed: str) -> List[str]:
-        """Get list of item IDs that need processing."""
+    def get_failed_items_from_previous_run(self, feed: str) -> List[str]:
+        """
+        Get items that failed in previous runs but are still in GCS.
+        These should be retried with smaller chunk sizes.
+        """
+        # Check for items in GCS that aren't in BigQuery
+        # This will catch items that failed previously
         bucket = self.storage_client.bucket(BUCKET_NAME)
         prefix = f"{feed}/clean/"
         
-        # Get all cleaned files
         blobs = bucket.list_blobs(prefix=prefix)
-        item_ids = []
+        gcs_item_ids = set()
         for blob in blobs:
             if blob.name.endswith('.txt'):
-                # Extract item_id from filename
-                # Format: feed/clean/https___developer.nvidia.com_blog__p_XXXXX.txt
                 filename = blob.name.split('/')[-1]
                 item_id = filename.replace('.txt', '')
-                item_ids.append(item_id)
+                gcs_item_ids.add(item_id)
+        
+        # Get items already in BigQuery
+        processed_ids = self.get_processed_item_ids(feed)
+        
+        # Items in GCS but not in BigQuery = failed items to retry
+        failed_items = list(gcs_item_ids - processed_ids)
+        
+        if failed_items:
+            logger.info(
+                f"Found {len(failed_items)} items in GCS but not in BigQuery for feed {feed}. "
+                f"These will be retried with automatic chunk size reduction."
+            )
+        
+        return failed_items
+    
+    def get_items_to_process(self, feed: str) -> List[str]:
+        """
+        Get list of item IDs that need processing.
+        Includes both new items and previously failed items that should be retried.
+        """
+        # Get items that failed in previous runs (in GCS but not in BigQuery)
+        failed_items = self.get_failed_items_from_previous_run(feed)
+        
+        # Also check for any new items (though get_failed_items already covers this)
+        # This ensures we don't miss anything
+        bucket = self.storage_client.bucket(BUCKET_NAME)
+        prefix = f"{feed}/clean/"
+        
+        blobs = bucket.list_blobs(prefix=prefix)
+        all_item_ids = set()
+        for blob in blobs:
+            if blob.name.endswith('.txt'):
+                filename = blob.name.split('/')[-1]
+                item_id = filename.replace('.txt', '')
+                all_item_ids.add(item_id)
         
         # Filter out already processed items
         processed_ids = self.get_processed_item_ids(feed)
-        new_items = [item_id for item_id in item_ids if item_id not in processed_ids]
+        items_to_process = list(all_item_ids - processed_ids)
         
-        logger.info(f"Feed {feed}: {len(new_items)} new items out of {len(item_ids)} total")
-        return new_items
+        logger.info(
+            f"Feed {feed}: {len(items_to_process)} items to process "
+            f"({len(failed_items)} from previous failures, "
+            f"{len(items_to_process) - len(failed_items)} new) "
+            f"out of {len(all_item_ids)} total"
+        )
+        return items_to_process
     
     def load_item_content(self, item_id: str, feed: str) -> Optional[str]:
         """Load item content from GCS."""
@@ -203,6 +245,14 @@ class ResilientBigQuerySync:
         embedding = self.embedding_model.get_embeddings([chunk['text']])[0]
         return embedding
     
+    def is_token_limit_error(self, error: Exception) -> bool:
+        """Check if error is due to token limit exceeded."""
+        error_str = str(error).lower()
+        return (
+            'token' in error_str and 
+            ('limit' in error_str or 'exceeded' in error_str or '20000' in error_str)
+        )
+    
     def process_batches_with_fallback(
         self, item_id: str, batches: List[List[Dict]]
     ) -> List[Dict]:
@@ -219,10 +269,17 @@ class ResilientBigQuerySync:
                     processed_chunks.append(chunk)
                     
             except Exception as batch_error:
-                logger.warning(
-                    f"Batch {batch_idx + 1} failed for {item_id}: {batch_error}. "
-                    f"Falling back to individual processing."
-                )
+                is_token_error = self.is_token_limit_error(batch_error)
+                if is_token_error:
+                    logger.warning(
+                        f"Batch {batch_idx + 1} failed due to token limit for {item_id}. "
+                        f"Falling back to individual processing."
+                    )
+                else:
+                    logger.warning(
+                        f"Batch {batch_idx + 1} failed for {item_id}: {batch_error}. "
+                        f"Falling back to individual processing."
+                    )
                 # Fallback: process individually
                 for chunk in batch:
                     try:
@@ -273,8 +330,105 @@ class ResilientBigQuerySync:
         self.bq_client.insert_rows_json(chunks_table, chunk_rows)
         logger.info(f"Stored {len(chunk_rows)} chunks for {item_id}")
     
+    def process_item_with_retry(
+        self, item_id: str, feed: str, content: str, metadata: Dict
+    ) -> bool:
+        """
+        Process item with automatic retry using progressively smaller chunks.
+        
+        If token limit errors occur, automatically retries with smaller chunk sizes.
+        Never gives up - keeps trying until it works or reaches minimum chunk size.
+        """
+        content_size = len(content.encode('utf-8'))
+        
+        # Progressive chunk size reduction strategy
+        # Start with adaptive size, then reduce if needed
+        chunk_size_strategies = [
+            self.content_handler.determine_chunking_config(content_size),
+            ChunkingConfig(chunk_size_tokens=500, overlap_tokens=100),  # Smaller
+            ChunkingConfig(chunk_size_tokens=300, overlap_tokens=60),    # Even smaller
+            ChunkingConfig(chunk_size_tokens=200, overlap_tokens=40),    # Very small
+            ChunkingConfig(chunk_size_tokens=100, overlap_tokens=20),    # Minimum
+        ]
+        
+        last_error = None
+        
+        for attempt, config in enumerate(chunk_size_strategies, 1):
+            try:
+                logger.info(
+                    f"Attempt {attempt} for {item_id}: "
+                    f"using {config.chunk_size_tokens}-token chunks"
+                )
+                
+                # Chunk content with current strategy
+                chunks = self.chunk_content(
+                    content,
+                    chunk_size=config.chunk_size_tokens,
+                    overlap=config.overlap_tokens
+                )
+                logger.info(f"Chunked into {len(chunks)} chunks")
+                
+                # Create batches that respect token limits
+                batches = self.content_handler.create_embedding_batches(chunks, config)
+                logger.info(f"Grouped into {len(batches)} batches")
+                
+                # Process batches with fallback
+                processed_chunks = self.process_batches_with_fallback(item_id, batches)
+                
+                if not processed_chunks:
+                    # If no chunks processed, try next smaller size
+                    logger.warning(
+                        f"No chunks processed for {item_id} with {config.chunk_size_tokens}-token chunks. "
+                        f"Trying smaller chunk size..."
+                    )
+                    continue
+                
+                # Success! Store in BigQuery
+                self.store_in_bigquery(item_id, feed, metadata, processed_chunks)
+                
+                logger.info(
+                    f"Successfully processed {item_id} on attempt {attempt}: "
+                    f"{len(processed_chunks)}/{len(chunks)} chunks "
+                    f"(used {config.chunk_size_tokens}-token chunks)"
+                )
+                return True
+                
+            except Exception as e:
+                last_error = e
+                is_token_error = self.is_token_limit_error(e)
+                
+                if is_token_error and attempt < len(chunk_size_strategies):
+                    # Token limit error - try smaller chunks
+                    logger.warning(
+                        f"Token limit error on attempt {attempt} for {item_id}. "
+                        f"Retrying with smaller chunk size ({chunk_size_strategies[attempt].chunk_size_tokens} tokens)..."
+                    )
+                    continue
+                else:
+                    # Other error or last attempt - log and return
+                    logger.error(
+                        f"Failed to process {item_id} on attempt {attempt}: {e}",
+                        exc_info=True
+                    )
+                    if attempt == len(chunk_size_strategies):
+                        # Last attempt failed
+                        logger.error(
+                            f"All retry attempts exhausted for {item_id}. "
+                            f"Content may be too large or have other issues."
+                        )
+                    break
+        
+        # All attempts failed
+        self.results['errors'].append({
+            'item_id': item_id,
+            'feed': feed,
+            'error': type(last_error).__name__ if last_error else 'Unknown',
+            'message': str(last_error) if last_error else 'All retry attempts failed'
+        })
+        return False
+    
     def process_item(self, item_id: str, feed: str) -> bool:
-        """Process a single item with full error handling."""
+        """Process a single item with full error handling and automatic retry."""
         try:
             logger.info(f"Processing item: {item_id} (feed: {feed})")
             
@@ -286,43 +440,14 @@ class ResilientBigQuerySync:
             
             # Parse metadata
             metadata = self.parse_item_metadata(content)
-            
-            # Determine chunking strategy based on content size
             content_size = len(content.encode('utf-8'))
-            config = self.content_handler.determine_chunking_config(content_size)
             
             logger.info(
-                f"Content size: {content_size / 1024:.1f}KB, "
-                f"using {config.chunk_size_tokens}-token chunks"
+                f"Content size: {content_size / 1024:.1f}KB"
             )
             
-            # Chunk content
-            chunks = self.chunk_content(
-                content,
-                chunk_size=config.chunk_size_tokens,
-                overlap=config.overlap_tokens
-            )
-            logger.info(f"Chunked into {len(chunks)} chunks")
-            
-            # Create batches that respect token limits
-            batches = self.content_handler.create_embedding_batches(chunks, config)
-            logger.info(f"Grouped into {len(batches)} batches")
-            
-            # Process batches with fallback
-            processed_chunks = self.process_batches_with_fallback(item_id, batches)
-            
-            if not processed_chunks:
-                logger.warning(f"No chunks processed for {item_id}")
-                return False
-            
-            # Store in BigQuery
-            self.store_in_bigquery(item_id, feed, metadata, processed_chunks)
-            
-            logger.info(
-                f"Successfully processed {item_id}: "
-                f"{len(processed_chunks)}/{len(chunks)} chunks"
-            )
-            return True
+            # Process with automatic retry
+            return self.process_item_with_retry(item_id, feed, content, metadata)
             
         except Exception as e:
             logger.error(
