@@ -155,10 +155,13 @@ class LargeContentHandler:
                 f"({current_token_count} tokens)"
             )
         
-        logger.info(
-            f"Created {len(batches)} batches from {len(chunks)} chunks "
-            f"(avg {len(chunks)/len(batches):.1f} chunks per batch)"
-        )
+        if len(batches) > 0:
+            logger.info(
+                f"Created {len(batches)} batches from {len(chunks)} chunks "
+                f"(avg {len(chunks)/len(batches):.1f} chunks per batch)"
+            )
+        else:
+            logger.info("No batches created (empty chunks list)")
         
         return batches
     
