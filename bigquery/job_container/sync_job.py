@@ -61,12 +61,17 @@ class ResilientBigQuerySync:
         logger.info(f"Project: {PROJECT_ID}, Bucket: {BUCKET_NAME}, Dataset: {DATASET_ID}")
     
     def get_processed_item_ids(self, feed: str) -> set:
-        """Get set of item IDs already in BigQuery."""
+        """
+        Get set of item IDs already in BigQuery with complete chunks.
+        Only considers items that have at least one chunk (fully processed).
+        """
         try:
             query = f"""
-            SELECT DISTINCT item_id
-            FROM `{PROJECT_ID}.{DATASET_ID}.{ITEMS_TABLE}`
-            WHERE feed = @feed
+            SELECT DISTINCT i.item_id
+            FROM `{PROJECT_ID}.{DATASET_ID}.{ITEMS_TABLE}` i
+            INNER JOIN `{PROJECT_ID}.{DATASET_ID}.{CHUNKS_TABLE}` c
+                ON i.item_id = c.item_id
+            WHERE i.feed = @feed
             """
             job_config = bigquery.QueryJobConfig(
                 query_parameters=[
@@ -76,7 +81,7 @@ class ResilientBigQuerySync:
             query_job = self.bq_client.query(query, job_config=job_config)
             results = query_job.result()
             item_ids = {row.item_id for row in results}
-            logger.info(f"Found {len(item_ids)} processed items for feed: {feed}")
+            logger.info(f"Found {len(item_ids)} fully processed items (with chunks) for feed: {feed}")
             return item_ids
         except Exception as e:
             logger.warning(f"Error getting processed items: {e}, assuming none processed")
