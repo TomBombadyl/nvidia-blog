@@ -299,6 +299,16 @@ class ResilientBigQuerySync:
         self, item_id: str, feed: str, metadata: Dict, chunks: List[Dict]
     ):
         """Store item and chunks in BigQuery."""
+        # Convert datetime to ISO format string for JSON serialization
+        pub_date = metadata.get('publication_date')
+        if pub_date and isinstance(pub_date, datetime):
+            pub_date_str = pub_date.isoformat()
+        elif pub_date:
+            # Already a string or other type
+            pub_date_str = str(pub_date)
+        else:
+            pub_date_str = None
+        
         # Store item
         items_table = self.bq_client.get_table(f"{PROJECT_ID}.{DATASET_ID}.{ITEMS_TABLE}")
         item_row = {
@@ -306,7 +316,7 @@ class ResilientBigQuerySync:
             'feed': feed,
             'source_uri': metadata.get('source', 'NVIDIA Developer Blog'),
             'title': metadata.get('title', ''),
-            'publication_date': metadata.get('publication_date'),
+            'publication_date': pub_date_str,
         }
         self.bq_client.insert_rows_json(items_table, [item_row])
         
@@ -321,7 +331,7 @@ class ResilientBigQuerySync:
                 'source_uri': metadata.get('source', 'NVIDIA Developer Blog'),
                 'text': chunk['text'],
                 'chunk_index': chunk['chunk_index'],
-                'publication_date': metadata.get('publication_date'),
+                'publication_date': pub_date_str,
                 'title': metadata.get('title', ''),
                 'embedding': chunk['embedding']
             }
